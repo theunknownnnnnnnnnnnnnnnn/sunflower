@@ -23,8 +23,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sha256sum crackshift_build_parts/part_*.b64
           mkdir -p .crackshift_tmp/src
           cat crackshift_build_parts/part_*.b64 | tr -d '[:space:]' | base64 --decode > .crackshift_tmp/crackshift-src.zip
+          sha256sum .crackshift_tmp/crackshift-src.zip
           echo '4f217bab15c74913b283199e98507ba1c5254fc2839fb9dc7c4e784fd19ad5f1  .crackshift_tmp/crackshift-src.zip' | sha256sum -c -
           unzip -q .crackshift_tmp/crackshift-src.zip -d .crackshift_tmp/src
 

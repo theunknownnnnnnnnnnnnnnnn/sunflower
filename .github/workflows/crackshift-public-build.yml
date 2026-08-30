@@ -1,0 +1,75 @@
+name: CRACKSHIFT APK Builder
+
+on:
+  push:
+    branches: [crackshift-apk-build-20260830]
+    paths:
+      - 'crackshift_build_parts/**'
+      - '.github/workflows/crackshift-public-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout isolated build branch
+        uses: actions/checkout@v4
+
+      - name: Reconstruct and verify CRACKSHIFT source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .crackshift_tmp/src
+          cat crackshift_build_parts/part_*.b64 | tr -d '[:space:]' | base64 --decode > .crackshift_tmp/crackshift-src.zip
+          echo '4f217bab15c74913b283199e98507ba1c5254fc2839fb9dc7c4e784fd19ad5f1  .crackshift_tmp/crackshift-src.zip' | sha256sum -c -
+          unzip -q .crackshift_tmp/crackshift-src.zip -d .crackshift_tmp/src
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Unit tests and APK build
+        working-directory: .crackshift_tmp/src
+        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
+
+      - name: Verify APK and prepare artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK='.crackshift_tmp/src/app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$APK"
+          mkdir -p dist
+          cp "$APK" dist/CRACKSHIFT-playable-v1.0.apk
+          sha256sum dist/CRACKSHIFT-playable-v1.0.apk | tee dist/SHA256.txt
+          unzip -t dist/CRACKSHIFT-playable-v1.0.apk >/dev/null
+          ls -lh dist/CRACKSHIFT-playable-v1.0.apk
+
+      - name: Upload playable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CRACKSHIFT-playable-v1.0
+          path: |
+            dist/CRACKSHIFT-playable-v1.0.apk
+            dist/SHA256.txt
+          if-no-files-found: error
+          retention-days: 30

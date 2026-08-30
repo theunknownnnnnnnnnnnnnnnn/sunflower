@@ -1,0 +1,73 @@
+name: Build CRACKSHIFT APK
+
+on:
+  push:
+    branches: ["crackshift-ci-temp"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore and verify CRACKSHIFT source
+        shell: bash
+        run: |
+          cat .crackshift_payload/part1.b64 \
+              .crackshift_payload/part2.b64 \
+              .crackshift_payload/part3.b64 \
+              .crackshift_payload/part4.b64 > CrackShift-source.zip.b64
+          echo "ca4424e70d09a3366363ccdb211ab74170100d587a91429ea48d137e30add15f  CrackShift-source.zip.b64" | sha256sum -c -
+          base64 -d CrackShift-source.zip.b64 > CrackShift-source.zip
+          echo "8c674820837cac490d0c9260d8bafffd2323675eef7f40873d8d44abef450216  CrackShift-source.zip" | sha256sum -c -
+          unzip -q CrackShift-source.zip
+          test -f crackshift_source/app/src/main/java/com/metanoia/crackshift/CrackEngine.java
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Run unit tests
+        working-directory: crackshift_source
+        run: gradle --no-daemon testDebugUnitTest
+
+      - name: Build installable APK
+        working-directory: crackshift_source
+        run: gradle --no-daemon assembleDebug
+
+      - name: Stage APK
+        shell: bash
+        run: |
+          cp crackshift_source/app/build/outputs/apk/debug/app-debug.apk CrackShift-v1.0.0.apk
+          test -s CrackShift-v1.0.0.apk
+          sha256sum CrackShift-v1.0.0.apk > CrackShift-v1.0.0.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrackShift-v1.0.0-APK
+          path: |
+            CrackShift-v1.0.0.apk
+            CrackShift-v1.0.0.apk.sha256
+          if-no-files-found: error
+          retention-days: 7

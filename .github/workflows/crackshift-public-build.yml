@@ -23,9 +23,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo '28deb30b9e88a59fcaa1208c33074becf9c7ab61d3458b61c6dbfd1ca4371eaf  crackshift_build/crackshift-min.tar.gz' | sha256sum -c -
+          sha256sum crackshift_build/crackshift-min.tar.gz
+          gzip -t crackshift_build/crackshift-min.tar.gz
+          tar -tzf crackshift_build/crackshift-min.tar.gz | tee /tmp/crackshift-files.txt
+          grep -q 'app/src/main/java/com/metanoia/crackshift/CrackEngine.java' /tmp/crackshift-files.txt
+          grep -q 'app/src/main/java/com/metanoia/crackshift/CrackShiftView.java' /tmp/crackshift-files.txt
           mkdir -p .crackshift_tmp/src
           tar -xzf crackshift_build/crackshift-min.tar.gz -C .crackshift_tmp/src
+          grep -q 'versionName "1.1.0"' .crackshift_tmp/src/app/build.gradle
+          grep -q 'MASTER CRACK' .crackshift_tmp/src/app/src/main/java/com/metanoia/crackshift/CrackShiftView.java
+          grep -q 'LevelInsight' .crackshift_tmp/src/app/src/main/java/com/metanoia/crackshift/CrackEngine.java
 
       - name: Set up Java 17
         uses: actions/setup-java@v4

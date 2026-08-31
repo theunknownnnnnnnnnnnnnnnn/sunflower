@@ -32,7 +32,7 @@ jobs:
           gzip -t /tmp/crackshift-min.tar.gz
           mkdir -p .crackshift_tmp/src
           tar -xzf /tmp/crackshift-min.tar.gz -C .crackshift_tmp/src
-          grep -q 'versionName "1.1.0"' .crackshift_tmp/src/app/build.gradle
+          grep -q "versionName '1.1.0'" .crackshift_tmp/src/app/build.gradle
           grep -q 'MASTER CRACK' .crackshift_tmp/src/app/src/main/java/com/metanoia/crackshift/CrackShiftView.java
           grep -q 'LevelInsight' .crackshift_tmp/src/app/src/main/java/com/metanoia/crackshift/CrackEngine.java
 

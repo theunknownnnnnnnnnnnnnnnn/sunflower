@@ -4,7 +4,7 @@ on:
   push:
     branches: [crackshift-apk-build-20260830]
     paths:
-      - 'crackshift_build_parts/**'
+      - 'crackshift_build/**'
       - '.github/workflows/crackshift-public-build.yml'
   workflow_dispatch:
 
@@ -19,16 +19,13 @@ jobs:
       - name: Checkout isolated build branch
         uses: actions/checkout@v4
 
-      - name: Reconstruct and verify CRACKSHIFT source
+      - name: Verify and unpack CRACKSHIFT source
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum crackshift_build_parts/part_*.b64
+          echo '28deb30b9e88a59fcaa1208c33074becf9c7ab61d3458b61c6dbfd1ca4371eaf  crackshift_build/crackshift-min.tar.gz' | sha256sum -c -
           mkdir -p .crackshift_tmp/src
-          cat crackshift_build_parts/part_*.b64 | tr -d '[:space:]' | base64 --decode > .crackshift_tmp/crackshift-src.zip
-          sha256sum .crackshift_tmp/crackshift-src.zip
-          echo '4f217bab15c74913b283199e98507ba1c5254fc2839fb9dc7c4e784fd19ad5f1  .crackshift_tmp/crackshift-src.zip' | sha256sum -c -
-          unzip -q .crackshift_tmp/crackshift-src.zip -d .crackshift_tmp/src
+          tar -xzf crackshift_build/crackshift-min.tar.gz -C .crackshift_tmp/src
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -61,17 +58,17 @@ jobs:
           APK='.crackshift_tmp/src/app/build/outputs/apk/debug/app-debug.apk'
           test -s "$APK"
           mkdir -p dist
-          cp "$APK" dist/CRACKSHIFT-playable-v1.0.apk
-          sha256sum dist/CRACKSHIFT-playable-v1.0.apk | tee dist/SHA256.txt
-          unzip -t dist/CRACKSHIFT-playable-v1.0.apk >/dev/null
-          ls -lh dist/CRACKSHIFT-playable-v1.0.apk
+          cp "$APK" dist/CRACKSHIFT-playable-v1.1.apk
+          sha256sum dist/CRACKSHIFT-playable-v1.1.apk | tee dist/SHA256.txt
+          unzip -t dist/CRACKSHIFT-playable-v1.1.apk >/dev/null
+          ls -lh dist/CRACKSHIFT-playable-v1.1.apk
 
       - name: Upload playable APK
         uses: actions/upload-artifact@v4
         with:
-          name: CRACKSHIFT-playable-v1.0
+          name: CRACKSHIFT-playable-v1.1
           path: |
-            dist/CRACKSHIFT-playable-v1.0.apk
+            dist/CRACKSHIFT-playable-v1.1.apk
             dist/SHA256.txt
           if-no-files-found: error
           retention-days: 30

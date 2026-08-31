@@ -19,17 +19,19 @@ jobs:
       - name: Checkout isolated build branch
         uses: actions/checkout@v4
 
-      - name: Verify and unpack CRACKSHIFT source
+      - name: Reconstruct and verify CRACKSHIFT source
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum crackshift_build/crackshift-min.tar.gz
-          gzip -t crackshift_build/crackshift-min.tar.gz
-          tar -tzf crackshift_build/crackshift-min.tar.gz | tee /tmp/crackshift-files.txt
-          grep -q 'app/src/main/java/com/metanoia/crackshift/CrackEngine.java' /tmp/crackshift-files.txt
-          grep -q 'app/src/main/java/com/metanoia/crackshift/CrackShiftView.java' /tmp/crackshift-files.txt
+          echo '2ff6cd80bbf48e9828d64154ae628de47842a8f2bfaa32b659e510904dfb96e5  crackshift_build/split/p00' | sha256sum -c -
+          echo '3dd8f8b95593ea1c764b88b2fcef430e18fc51894797aae35c820f9c4f577b83  crackshift_build/split/p01' | sha256sum -c -
+          echo '5fa570c00f752b34110c612d57e77aea17248b8ad7b81e953217b4217a9a5e5b  crackshift_build/split/p02' | sha256sum -c -
+          echo '41d539d5841c4fc1789e82e3023be35d3c13af3931bd30b613bf7437e3c5e708  crackshift_build/split/p03' | sha256sum -c -
+          cat crackshift_build/split/p00 crackshift_build/split/p01 crackshift_build/split/p02 crackshift_build/split/p03 > /tmp/crackshift-min.tar.gz
+          echo '28deb30b9e88a59fcaa1208c33074becf9c7ab61d3458b61c6dbfd1ca4371eaf  /tmp/crackshift-min.tar.gz' | sha256sum -c -
+          gzip -t /tmp/crackshift-min.tar.gz
           mkdir -p .crackshift_tmp/src
-          tar -xzf crackshift_build/crackshift-min.tar.gz -C .crackshift_tmp/src
+          tar -xzf /tmp/crackshift-min.tar.gz -C .crackshift_tmp/src
           grep -q 'versionName "1.1.0"' .crackshift_tmp/src/app/build.gradle
           grep -q 'MASTER CRACK' .crackshift_tmp/src/app/src/main/java/com/metanoia/crackshift/CrackShiftView.java
           grep -q 'LevelInsight' .crackshift_tmp/src/app/src/main/java/com/metanoia/crackshift/CrackEngine.java
